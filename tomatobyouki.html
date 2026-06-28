@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>トマト病気判定ナビ</title>
+    <style>
+        body { font-family: sans-serif; background-color: #fdf2f2; color: #333; margin: 0; padding: 15px; }
+        .container { max-width: 600px; background: white; margin: 0 auto; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: #c62828; font-size: 1.5rem; }
+        .section { margin-bottom: 15px; border-bottom: 1px dashed #ccc; padding-bottom: 15px; }
+        .section-title { font-weight: bold; color: #c62828; margin-bottom: 8px; display: block; }
+        select { width: 100%; padding: 10px; font-size: 1rem; border: 1px solid #ccc; border-radius: 5px; background: #fafafa; }
+        button { width: 100%; padding: 12px; background: #c62828; color: white; border: none; font-size: 1.1rem; border-radius: 5px; cursor: pointer; margin-top: 10px; }
+        button:hover { background: #b71c1c; }
+        #result { margin-top: 20px; padding: 15px; border-radius: 5px; display: none; }
+        .disease-name { font-size: 1.3rem; font-weight: bold; color: #bf360c; margin-bottom: 10px; }
+        .info-block { margin-top: 8px; background: #f9f9f9; padding: 10px; border-left: 4px solid #c62828; }
+        .info-title { font-weight: bold; color: #555; }
+        .search-btn { display: inline-block; width: 100%; text-align: center; padding: 12px; background: #d84315; color: white; font-weight: bold; border-radius: 5px; text-decoration: none; margin-top: 15px; box-sizing: border-box; }
+        .search-btn:hover { background: #bf360c; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🍅 トマト病気判定ナビ</h1>
+    <p style="font-size: 0.9rem; text-align: center; color: #666;">気になる部位と症状を1つ選んでください</p>
+
+    <div class="section">
+        <span class="section-title">【葉】の症状</span>
+        <select id="symptom-leaf" onchange="clearOthers('symptom-leaf')">
+            <option value="">-- 選択してください --</option>
+            <option value="葉かび病">葉裏に灰褐色のビロード状のかび、表に黄色の斑点</option>
+            <option value="うどんこ病">葉全体に白い粉をまぶしたようなかび</option>
+            <option value="すすかび病">葉裏に灰褐色〜黒色のすす状のかび</option>
+            <option value="モザイク病">葉に濃淡のモザイク模様、新葉が縮れる</option>
+            <option value="トマト黄化葉巻病">成長点が萎縮し、葉が黄色く巻き上がる</option>
+        </select>
+    </div>
+
+    <div class="section">
+        <span class="section-title">【実】の症状</span>
+        <select id="symptom-fruit" onchange="clearOthers('symptom-fruit')">
+            <option value="">-- 選択してください --</option>
+            <option value="灰色かび病">果実やヘタに灰色のかびが生え、腐敗する</option>
+            <option value="疫病">果実に暗緑色の水浸状斑点ができ、急速に腐敗する</option>
+            <option value="へた枯れ症">ヘタの部分が黒く変色し、落果しやすくなる</option>
+            <option value="尻腐れ症">果実のお尻が黒く変色してへこむ（※病気ではなく生理障害）</option>
+        </select>
+    </div>
+
+    <div class="section">
+        <span class="section-title">【茎・根】の症状</span>
+        <select id="symptom-stem" onchange="clearOthers('symptom-stem')">
+            <option value="">-- 選択してください --</option>
+            <option value="萎凋病（いちょうびょう）">下葉から黄色く枯れ、日中に萎れる</option>
+            <option value="青枯病">青いまま急激に萎れ、茎の切断面が褐変する</option>
+            <option value="かいよう病">茎の表面に潰瘍（ささくれ）やひび割れ、斑点</option>
+        </select>
+    </div>
+
+    <button onclick="diagnose()">病気を判定する</button>
+
+    <div id="result"></div>
+</div>
+
+<script>
+function clearOthers(selectedId) {
+    ['symptom-leaf', 'symptom-fruit', 'symptom-stem'].forEach(id => {
+        if (id !== selectedId) document.getElementById(id).value = "";
+    });
+}
+
+const diseaseDatabase = {
+    "葉かび病": { type: "糸状菌（かび）", symptom: "葉の裏面に灰褐色のビロード状のかびが密生し、表面には黄色い斑点が出る。", action: "多湿で発生。換気を良くし、水やりは葉にかけない。", chemical: "ダコニール1000、ベネレン水和剤など" },
+    "うどんこ病": { type: "糸状菌（かび）", symptom: "葉全体に白い粉をまぶしたようなかびが発生する。", action: "風通しを良くし、日照を確保する。", chemical: "カリグリーン、パンチョTFなど" },
+    "すすかび病": { type: "糸状菌（かび）", symptom: "葉の裏面に小さな淡緑色の斑点が出て、後に灰褐色〜黒色のすす状のかびになる。", action: "高湿度で発生。ハウス内の湿気対策を優先。", chemical: "ダコニール1000、アミスター20など" },
+    "モザイク病": { type: "ウイルス", symptom: "葉に濃淡の模様ができ、新葉が縮れて生育が悪くなる。", action: "アブラムシが媒介。防虫ネットで遮断し、農機具を消毒する。", chemical: "（殺虫剤で媒介昆虫を防除）" },
+    "トマト黄化葉巻病": { type: "ウイルス", symptom: "成長点が萎縮し、葉が黄色く巻き上がる。非常に深刻な病気。", action: "タバココナジラミが媒介。早期発見して株ごと抜き取り処分。", chemical: "（コナジラミ対策の殺虫剤を使用）" },
+    "灰色かび病": { type: "糸状菌（かび）", symptom: "果実やヘタに灰色のかびが生え、軟らかく腐る。", action: "花がらを取り除き、多湿を避ける。", chemical: "セイビアーフロアブル、ファンタジスタなど" },
+    "疫病": { type: "卵菌", symptom: "果実に暗緑色の水浸状斑点ができ、急速に腐敗。葉や茎にも出る。", action: "雨による泥跳ねを防ぐ（マルチ使用）。", chemical: "ランマンフロアブル、リドミルゴールドなど" },
+    "へた枯れ症": { type: "糸状菌（かび）", symptom: "ヘタの部分から黒く変色し、落果しやすくなる。", action: "雨天後に多い。ヘタ周りの湿気を減らす。", chemical: "ダコニール1000など" },
+    "尻腐れ症": { type: "生理障害", symptom: "果実のお尻部分が黒く変色してへこむ。", action: "カルシウム欠乏。石灰肥料の施用と水管理を安定させる。", chemical: "（カルシウム剤の葉面散布）" },
+    "萎凋病（いちょうびょう）": { type: "糸状菌（かび）", symptom: "下葉から黄色く変色して枯れ、日中に萎れる。", action: "土壌伝染。接ぎ木苗の使用が推奨される。", chemical: "（土壌消毒が基本）" },
+    "青枯病": { type: "細菌", symptom: "青いまま急激に萎れる。茎の切断面が褐変し、菌が滲み出る。", action: "高温多湿で発生。発病株は即刻抜き取り処分。", chemical: "（特効薬は少ない。土壌消毒と抵抗性台木の使用）" },
+    "かいよう病": { type: "細菌", symptom: "茎の表面に潰瘍（ささくれ）やひび割れ、斑点が出る。", action: "ハサミによる伝染が多い。道具の消毒を徹底。", chemical: "コサイド3000など（銅剤）" }
+};
+
+function diagnose() {
+    const leaf = document.getElementById('symptom-leaf').value;
+    const fruit = document.getElementById('symptom-fruit').value;
+    const stem = document.getElementById('symptom-stem').value;
+    const selectedDisease = leaf || fruit || stem;
+    const resultDiv = document.getElementById('result');
+
+    if (!selectedDisease) {
+        resultDiv.style.display = "block";
+        resultDiv.style.backgroundColor = "#ffebee";
+        resultDiv.innerHTML = "<p style='color:#c62828; text-align:center; font-weight:bold;'>症状をどれか1つ選択してください！</p>";
+        return;
+    }
+
+    const data = diseaseDatabase[selectedDisease];
+    const searchUrl = `https://www.google.com/search?tbm=isch&q=${encodeURIComponent('トマト ' + selectedDisease)}`;
+
+    resultDiv.style.display = "block";
+    resultDiv.style.backgroundColor = "#fff3e0";
+    resultDiv.innerHTML = `
+        <div class="disease-name">🎯 推測される病気：${selectedDisease}</div>
+        <div style="font-size:0.85rem; color:#666; margin-bottom:10px;">【病原の種類】 ${data.type}</div>
+        <div class="info-block"><span class="info-title">📋 症状の特徴:</span><p style="margin:5px 0 0 0; font-size:0.95rem;">${data.symptom}</p></div>
+        <div class="info-block"><span class="info-title">🛠️ 現場での対策:</span><p style="margin:5px 0 0 0; font-size:0.95rem;">${data.action}</p></div>
+        <div class="info-block"><span class="info-title">💊 提案される代表的な農薬:</span><p style="margin:5px 0 0 0; font-size:0.95rem; color:#b71c1c; font-weight:bold;">${data.chemical}</p></div>
+        <a href="${searchUrl}" target="_blank" class="search-btn">📸 Googleで「トマト ${selectedDisease}」の画像検索を見る</a>
+    `;
+}
+</script>
+</body>
+</html>
