@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>なすび病気判定ナビ</title>
+    <style>
+        body { font-family: sans-serif; background-color: #f5f0f6; color: #333; margin: 0; padding: 15px; }
+        .container { max-width: 600px; background: white; margin: 0 auto; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: #4a148c; font-size: 1.5rem; }
+        .section { margin-bottom: 15px; border-bottom: 1px dashed #ccc; padding-bottom: 15px; }
+        .section-title { font-weight: bold; color: #4a148c; margin-bottom: 8px; display: block; }
+        select { width: 100%; padding: 10px; font-size: 1rem; border: 1px solid #ccc; border-radius: 5px; background: #fafafa; }
+        button { width: 100%; padding: 12px; background: #4a148c; color: white; border: none; font-size: 1.1rem; border-radius: 5px; cursor: pointer; margin-top: 10px; }
+        button:hover { background: #311b92; }
+        #result { margin-top: 20px; padding: 15px; border-radius: 5px; display: none; }
+        .disease-name { font-size: 1.3rem; font-weight: bold; color: #d32f2f; margin-bottom: 10px; }
+        .info-block { margin-top: 8px; background: #f9f9f9; padding: 10px; border-left: 4px solid #4a148c; }
+        .info-title { font-weight: bold; color: #555; }
+        .search-btn { display: inline-block; width: 100%; text-align: center; padding: 12px; background: #e65100; color: white; font-weight: bold; border-radius: 5px; text-decoration: none; margin-top: 15px; box-sizing: border-box; }
+        .search-btn:hover { background: #bf360c; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🍆 なすび病気判定ナビ</h1>
+    <p style="font-size: 0.9rem; text-align: center; color: #666;">気になる部位と症状を1つ選んでください</p>
+
+    <div class="section">
+        <span class="section-title">【葉】の症状</span>
+        <select id="symptom-leaf" onchange="clearOthers('symptom-leaf')">
+            <option value="">-- 選択してください --</option>
+            <option value="うどんこ病">葉の表面にうどん粉をまぶしたような白いカビ</option>
+            <option value="すすかび病">葉の裏面に淡褐色〜黒紫色の「すす状」のカビがびっしり</option>
+            <option value="褐斑病">下葉に淡褐色で同心円状の斑点。次第に破れて穴があく</option>
+            <option value="ハダニ類（参考）">葉の表面に細かい白い点が多数、裏面に小さな虫やクモの糸</option>
+        </select>
+    </div>
+
+    <div class="section">
+        <span class="section-title">【実・花】の症状</span>
+        <select id="symptom-fruit" onchange="clearOthers('symptom-fruit')">
+            <option value="">-- 選択してください --</option>
+            <option value="灰色かび病">花弁が腐って落ちず、果実に拡大。灰色のもこもこしたカビ</option>
+            <option value="黒枯病">果実に黒くてやや凹んだ円形の病斑、のちに同心円状に広がる</option>
+            <option value="果実汚斑病">果実の表面に水浸状の斑点。進行すると果実全体が腐る</option>
+        </select>
+    </div>
+
+    <div class="section">
+        <span class="section-title">【株全体・茎・根】の症状</span>
+        <select id="symptom-stem" onchange="clearOthers('symptom-stem')">
+            <option value="">-- 選択してください --</option>
+            <option value="青枯病">日中に急に青いまま萎れ、夜間に戻る。数日で完全に枯死</option>
+            <option value="半身萎凋病">葉の「片側半分」だけが黄色く萎れる。じわじわ進行する</option>
+            <option value="半枯病">下葉の縁から黄化し、株の一部や半分が枯れ上がる</option>
+        </select>
+    </div>
+
+    <button onclick="diagnose()">病気を判定する</button>
+
+    <div id="result"></div>
+</div>
+
+<script>
+// 選択した場所以外をリセットする関数（バグ対策）
+function clearOthers(selectedId) {
+    const ids = ['symptom-leaf', 'symptom-fruit', 'symptom-stem'];
+    ids.forEach(id => {
+        if (id !== selectedId) {
+            document.getElementById(id).value = "";
+        }
+    });
+}
+
+const diseaseDatabase = {
+    "うどんこ病": { type: "糸状菌（かび）", symptom: "葉の表面に白い粉（菌糸）が広がり、光合成を邪魔します。ひどくなると葉が黄化して落葉します。", action: "風通しを良くする。発病初期の防除が肝心。乾燥気味の時に発生しやすいです。", chemical: "アミスター20フロアブル、ガッテン乳剤、パンチョTF水和剤など" },
+    "すすかび病": { type: "糸状菌（かび）", symptom: "葉の裏面にすすを吹き付けたような黒紫色のカビがびっしり生めます。ハウス栽培で特に猛威を振るいます。", action: "多湿を避けるため換気を徹底。下葉の古い葉や発病葉はこまめに摘除して圃場外へ処分。", chemical: "フルピカフロアブル、アミスター20フロアブル、トリフミン水和剤など" },
+    "褐斑病": { type: "糸状菌（かび）", symptom: "下葉に淡褐色で円形の病斑ができ、のちに同心円状に広がります。古くなると中央が抜けて穴があきます。", action: "雨による跳ね返りで伝染するためマルチングが必須。肥料切れで樹勢が落ちると発生しやすくなります。", chemical: "トップジンM水和剤、ゲッター水和剤、コサイド3000など" },
+    "灰色かび病": { type: "糸状菌（かび）", symptom: "咲き終わった花弁（花がら）に菌がつき、それが実に触れて発病。灰色のもこもこしたカビで実が腐ります。", action: "なすびの灰色かび病対策は「花がら摘み」が基本。低温多湿で激発するのでハウスは換気を。", chemical: "セイビアーフロアブル、ファンタジスタ顆粒水和剤、ロブラール水和剤など" },
+    "黒枯病": { type: "糸状菌（かび）", symptom: "葉、茎、果実に黒褐色の斑点ができます。特に果実では同心円状の黒い凹みになり、商品価値がなくなります。", action: "雨が多く多湿な時期に発生。密植を避け、風通しと日当たりを確保。マルチで泥跳ねを防ぎます。", chemical: "ダコニール1000、アミスター20フロアブル、オーソサイド水和剤など" },
+    "果実汚斑病": { type: "細菌（バクテリア）", symptom: "果実に水が染みたような不整形な斑点ができ、急激に軟化して腐敗します。強烈な悪臭を放つこともあります。", action: "細菌性なのでハサミや雨水で伝染します。雨の日の作業は避け、発病果は即座に持ち出して処分。", chemical: "コサイド3000、ジーファイン水和剤（銅水和剤や抗生物質製剤が基本）" },
+    "青枯病": { type: "細菌（バクテリア・土壌伝染）", symptom: "日中に葉が緑色のまま（青いまま）ガクッと萎れ、夜間に少し回復するのを2〜3日繰り返し、そのまま急激に枯死します。", action: "排水対策（高畝）を徹底。発病株は根ごと抜き取り周囲を消毒。台木には「青枯病抵抗性台木」を使うのが鉄則。", chemical: "（発生後の特効薬はありません。事前の土壌消毒やバリダシン液剤の株元潅注など）" },
+    "半身萎凋病": { type: "糸状菌（土壌伝染性のかび）", symptom: "株の片側、または葉の半分だけが黄色くなって萎れます。青枯病に比べて進行が比較的ゆっくりなのが特徴です。", action: "土壌伝染性。連作を避けるか、抵抗性台木（赤ナス、台太郎など）への接ぎ木苗を必ず使用する。", chemical: "（耕種的防除が基本。定植前の土壌消毒や、ベンレート水和剤の潅注など）" },
+    "半枯病": { type: "糸状菌（土壌伝染性のかび）", symptom: "下葉の縁から黄化し、株の一部分だけが枯れ上がっていきます。導管（茎の断面）が茶色く徒長します。", action: "半身萎凋病とほぼ同様の対策。地温が上がると発生しやすいため、マルチの工夫や接ぎ木苗が有効。", chemical: "（定植前の土壌消毒や、事前の耕種的対策が中心となります）" },
+    "ハダニ類（参考）": { type: "害虫（※病気ではありません）", symptom: "葉の表面に針で突いたような白い小さな点が無数に発生し、葉の色が抜けて白っぽくなります。裏面にクモの糸が張ることも。", action: "乾燥すると爆発的に増えます。天敵（カブリダニなど）を利用するか、早期に殺ダニ剤を散布。", chemical: "コロマイト水和剤、マイトコーネフロアブルなど（ダニ剤はローテーション散布が基本）" }
+};
+
+function diagnose() {
+    const leaf = document.getElementById('symptom-leaf').value;
+    const fruit = document.getElementById('symptom-fruit').value;
+    const stem = document.getElementById('symptom-stem').value;
+
+    let selectedDisease = leaf || fruit || stem;
+    const resultDiv = document.getElementById('result');
+
+    if (!selectedDisease) {
+        resultDiv.style.display = "block";
+        resultDiv.style.backgroundColor = "#ffebee";
+        resultDiv.innerHTML = "<p style='color:#c62828; text-align:center; font-weight:bold;'>症状をどれか1つ選択してください！</p>";
+        return;
+    }
+
+    const data = diseaseDatabase[selectedDisease];
+    const searchKeyword = selectedDisease.replace(/（.*）/, '');
+    const searchUrl = `https://www.google.com/search?tbm=isch&q=${encodeURIComponent('ナス ' + searchKeyword)}`;
+
+    resultDiv.style.display = "block";
+    resultDiv.style.backgroundColor = "#f3e5f5";
+    resultDiv.innerHTML = `
+        <div class="disease-name">🎯 推測される病気：${selectedDisease}</div>
+        <div style="font-size:0.85rem; color:#666; margin-bottom:10px;">【病原・原因の種類】 ${data.type}</div>
+        <div class="info-block"><span class="info-title">📋 症状の特徴:</span><p style="margin:5px 0 0 0; font-size:0.95rem;">${data.symptom}</p></div>
+        <div class="info-block"><span class="info-title">🛠️ 現場での対策:</span><p style="margin:5px 0 0 0; font-size:0.95rem;">${data.action}</p></div>
+        <div class="info-block"><span class="info-title">💊 提案される代表的な農薬:</span><p style="margin:5px 0 0 0; font-size:0.95rem; color:#b71c1c; font-weight:bold;">${data.chemical}</p></div>
+        <a href="${searchUrl}" target="_blank" class="search-btn">📸 Googleで「ナス ${searchKeyword}」の症例写真を見る</a>
+    `;
+}
+</script>
+</body>
+</html>
