@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>きゅうり病気判定ナビ</title>
+    <style>
+        body { font-family: sans-serif; background-color: #f4f9f4; color: #333; margin: 0; padding: 15px; }
+        .container { max-width: 600px; background: white; margin: 0 auto; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: #2e7d32; font-size: 1.5rem; }
+        .section { margin-bottom: 15px; border-bottom: 1px dashed #ccc; padding-bottom: 15px; }
+        .section-title { font-weight: bold; color: #2e7d32; margin-bottom: 8px; display: block; }
+        select { width: 100%; padding: 10px; font-size: 1rem; border: 1px solid #ccc; border-radius: 5px; background: #fafafa; }
+        button { width: 100%; padding: 12px; background: #2e7d32; color: white; border: none; font-size: 1.1rem; border-radius: 5px; cursor: pointer; margin-top: 10px; }
+        button:hover { background: #1b5e20; }
+        #result { margin-top: 20px; padding: 15px; border-radius: 5px; display: none; }
+        .disease-name { font-size: 1.3rem; font-weight: bold; color: #d32f2f; margin-bottom: 10px; }
+        .info-block { margin-top: 8px; background: #f9f9f9; padding: 10px; border-left: 4px solid #2e7d32; }
+        .info-title { font-weight: bold; color: #555; }
+        .search-btn { display: inline-block; width: 100%; text-align: center; padding: 12px; background: #e65100; color: white; font-weight: bold; border-radius: 5px; text-decoration: none; margin-top: 15px; box-sizing: border-box; }
+        .search-btn:hover { background: #bf360c; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🥒 きゅうり病気判定ナビ</h1>
+    <p style="font-size: 0.9rem; text-align: center; color: #666;">気になる部位と症状を1つ選んでください</p>
+
+    <div class="section">
+        <span class="section-title">【葉】の症状</span>
+        <select id="symptom-leaf" onchange="clearOthers('symptom-leaf')">
+            <option value="">-- 選択してください --</option>
+            <option value="うどんこ病">うどん粉を振りかけたような白い粉・かび</option>
+            <option value="べと病">黄色い葉脈に囲まれた「角型」の斑点</option>
+            <option value="モザイク病">モザイク状の濃淡・黄緑の斑点や奇形</option>
+            <option value="黄化えそ病">葉にえそ斑点（枯れ斑）、新葉のモザイクや奇形</option>
+            <option value="斑点細菌病">水浸状の小さな斑点から、拡大してV字型・不整形に</option>
+            <option value="炭疽病（葉）">黄褐色で「円形」の病斑、古くなると破れて穴があく</option>
+            <option value="褐斑病">淡褐色で円形の小斑点から、中央が灰褐色の大型斑点に</option>
+            <option value="黒星病（葉）">小さな水浸状の斑点、のちに黄褐色になり穴があく</option>
+        </select>
+    </div>
+
+    <div class="section">
+        <span class="section-title">【実・花】の症状</span>
+        <select id="symptom-fruit" onchange="clearOthers('symptom-fruit')">
+            <option value="">-- 選択してください --</option>
+            <option value="灰色かび病">花落ち部から幼果へ淡褐色の腐敗が広がり、灰色のかび</option>
+            <option value="菌核病">水浸状の大型病斑、白色の菌糸と「黒いフン状」の塊</option>
+            <option value="黒星病（実）">果実に水浸状の小さなくぼみ、のちに暗褐色でヤニが出る</option>
+            <option value="炭疽病（実）">果実に円形・へこんだ病斑、雨天時にサケ色（ピンク）の粘質物</option>
+        </select>
+    </div>
+
+    <div class="section">
+        <span class="section-title">【茎・根】の症状</span>
+        <select id="symptom-stem" onchange="clearOthers('symptom-stem')">
+            <option value="">-- 選択してください --</option>
+            <option value="つる枯病">地際に近い茎に淡褐色・水浸状の病斑、のちに軟化</option>
+            <option value="つる割病">茎からヤニが出て縦に割れ、日中に萎れるのを繰り返す</option>
+            <option value="疫病">地際の茎が暗緑色に水浸状に腐敗し、細くしぼんで倒れる</option>
+        </select>
+    </div>
+
+    <button onclick="diagnose()">病気を判定する</button>
+
+    <div id="result"></div>
+</div>
+
+<script>
+// 選択した場所以外をリセットする関数（バグ対策）
+function clearOthers(selectedId) {
+    const ids = ['symptom-leaf', 'symptom-fruit', 'symptom-stem'];
+    ids.forEach(id => {
+        if (id !== selectedId) {
+            document.getElementById(id).value = "";
+        }
+    });
+}
+
+const diseaseDatabase = {
+    "うどんこ病": { type: "糸状菌（かび）", symptom: "葉面にうどん粉を振りかけたような白色、粉状のかびを生じる。", action: "日当たりと風通しを良くする。発病した古い葉は早めに摘み取る。", chemical: "カリグリーン、パンチョTFなど" },
+    "べと病": { type: "糸状菌（かび）", symptom: "黄色で葉脈に囲まれた「角型」の病斑を形成し、裏面には紫黒色のかびを生じる。", action: "多湿で発生しやすいので換気を徹底。肥料切れを起こさないよう管理する。", chemical: "ランマンフロアブル、ジーファイン水和剤など" },
+    "モザイク病": { type: "ウイルス", symptom: "葉に濃淡のあるモザイク模様や奇形を生じる。実にも凸凹が出る。", action: "アブラムシなどの害虫を防虫ネットやマルチで防ぐ。ハサミの使い回しに注意。", chemical: "（ウイルス自体に効く農薬はありません。アブラムシ等を殺虫剤で防除）" },
+    "黄化えそ病": { type: "ウイルス（MYSV）", symptom: "葉に明確なえそ斑点（茶色く枯れた点）が出る。新葉のモザイクや奇形、株の生育不良を伴う。", action: "媒介するアザミウマ類の防除を徹底する。発病株は見つけ次第、抜き取って処分。", chemical: "（ウイルスに直接効く薬はないため、アザミウマ類の防除剤を使用）" },
+    "斑点細菌病": { type: "細菌（バクテリア）", symptom: "水浸状（水が染みたよう）の小さな斑点。進行すると葉脈に沿ってV字型や不整形に広がり、破れやすい。", action: "雨による跳ね返りや、作業時の傷口から伝染する。マルチで泥跳ねを防ぎ、雨の日の整枝は避ける。", chemical: "コサイド3000、ジーファイン水和剤など（銅水和剤）" },
+    "炭疽病（葉）": { type: "糸状菌（かび）", symptom: "葉に黄褐色で「円形」の病斑が生じ、古くなると中央が灰白色になって破れ、穴があく。", action: "雨による跳ね返りを防ぐためマルチを張る。過繁茂を避け、風通しを良くする。", chemical: "トップジンM水和剤、ダコニール1000など" },
+    "褐斑病": { type: "糸状菌（かび）", symptom: "葉に淡褐色で円形の小斑点を生じ、中央が灰褐色の大型斑点になる。べと病と違い、葉脈で止まらず丸く広がる。", action: "ハウス内の多湿を避け、換気を良くする。肥料切れ（特に窒素・カリ）に注意して樹勢を保つ。", chemical: "アミスター20フロアブル、フルピカフロアブルなど" },
+    "黒星病（葉）": { type: "糸状菌（かび）", symptom: "若い葉に小さな水浸状の斑点ができ、のちに黄褐色になって脱落し、星型の穴があく。", action: "低温多湿（特に春・秋の長雨時）に発生しやすい。ハウスの保温と換気を適切に行う。", chemical: "アミスター20フロアブル、フリントフロアブルなど" },
+    "灰色かび病": { type: "糸状菌（かび）", symptom: "花落ち部（実の先端）から幼果へ淡褐色の腐敗が広がる。灰色のかびがびっしり生じる。", action: "終わった花弁（花がら）に菌がつきやすいのでこまめに摘む。低温多湿で激発しやすい。", chemical: "ファンタジスタ顆粒水和剤、セイビアーフロアブルなど" },
+    "菌核病": { type: "糸状菌（かび）", symptom: "灰緑色、水浸状の大型病斑。白色菌糸と「黒色ネズミふん状」の菌核を生じる。", action: "多湿を避ける。病斑にできた黒い塊（菌核）が土に落ちると翌年の伝染源になるので、落ちる前に回収処分。", chemical: "スミレックス水和剤、ロブラール水和剤など" },
+    "黒星病（実）": { type: "糸状菌（かび）", symptom: "果実に水浸状の小さなくぼみができ、進行すると暗褐色になってゼリー状のヤニ（汁）を分泌する。", action: "葉の黒星病と同様、低温多湿で発生。風通しを良くし、多湿環境を改善する。", chemical: "アミスター20フロアブル、フリントフロアブルなど" },
+    "炭疽病（実）": { type: "糸状菌（かび）", symptom: "果実に円形にくぼんだ病斑ができる。雨天時には病斑の上にサケ色（淡いピンク）の粘り気のある物が出る。", action: "泥跳ね防止のマルチング、密植を避けて日当たりと風通しを確保する。", chemical: "トップジンM水和剤、ダコニール1000など" },
+    "つる枯病": { type: "糸状菌（かび）", symptom: "地際に近い茎に淡褐色・水浸状の病斑を生じて軟化する。のちに株全体が枯れる。", action: "高畝にして排水対策。整枝や収穫は傷口が乾きやすい晴天の日に行う。", chemical: "トップジンMペースト（茎に塗布）、ベンレート水和剤など" },
+    "つる割病": { type: "糸状菌（かび）", symptom: "日中に萎れて夜間に戻るのを繰り返す。茎からヤニが出て縦に割れる。", action: "土壌伝染性。抵抗性台木（かぼちゃ等）への「接ぎ木苗」を使用するのが一番有効。", chemical: "（発生後の特効薬は少ないため、事前の土壌消毒や接ぎ木が基本）" },
+    "疫病": { type: "卵菌（かびの仲間）", symptom: "地際の茎や葉、実が暗緑色の水浸状に急速に腐敗する。茎は細くしぼんでしおれ、株全体が急激に倒れる。", action: "水はけの悪い畑で大雨の後に多発する。高畝・排水溝の整備を徹底し、敷き藁やマルチで泥跳ねを防ぐ。", chemical: "ランマンフロアブル、リドミルゴールドMZなど" }
+};
+
+function diagnose() {
+    const leaf = document.getElementById('symptom-leaf').value;
+    const fruit = document.getElementById('symptom-fruit').value;
+    const stem = document.getElementById('symptom-stem').value;
+
+    let selectedDisease = leaf || fruit || stem;
+    const resultDiv = document.getElementById('result');
+
+    if (!selectedDisease) {
+        resultDiv.style.display = "block";
+        resultDiv.style.backgroundColor = "#ffebee";
+        resultDiv.innerHTML = "<p style='color:#c62828; text-align:center; font-weight:bold;'>症状をどれか1つ選択してください！</p>";
+        return;
+    }
+
+    const data = diseaseDatabase[selectedDisease];
+    const searchKeyword = selectedDisease.replace(/（.*）/, '');
+    const searchUrl = `https://www.google.com/search?tbm=isch&q=${encodeURIComponent('きゅうり ' + searchKeyword)}`;
+
+    resultDiv.style.display = "block";
+    resultDiv.style.backgroundColor = "#e8f5e9";
+    resultDiv.innerHTML = `
+        <div class="disease-name">🎯 推測される病気：${selectedDisease}</div>
+        <div style="font-size:0.85rem; color:#666; margin-bottom:10px;">【病原の種類】 ${data.type}</div>
+        <div class="info-block"><span class="info-title">📋 症状の特徴:</span><p style="margin:5px 0 0 0; font-size:0.95rem;">${data.symptom}</p></div>
+        <div class="info-block"><span class="info-title">🛠️ 現場での対策:</span><p style="margin:5px 0 0 0; font-size:0.95rem;">${data.action}</p></div>
+        <div class="info-block"><span class="info-title">💊 提案される代表的な農薬:</span><p style="margin:5px 0 0 0; font-size:0.95rem; color:#b71c1c; font-weight:bold;">${data.chemical}</p></div>
+        <a href="${searchUrl}" target="_blank" class="search-btn">📸 Googleで「きゅうり ${searchKeyword}」の症例写真を見る</a>
+    `;
+}
+</script>
+</body>
+</html>
